@@ -20,11 +20,13 @@ from keras.layers import GRU, LSTM, Dropout, Dense, BatchNormalization
 from keras.callbacks import EarlyStopping, LearningRateScheduler
 from keras.optimizers import Adam
 
+
 MAX_TIME_STEPS = 1000
-RealMidiFolder = "./assets/realMusic/"
-FakeMidiFolder = "./assets/fakeMusic/"
-RealCSVFolder = "./assets/csvs/realCSVs/"
-FakeCSVFolder = "./assets/csvs/fakeCSVs/"
+RealMidiFolder = "../assets/realMusic"
+FakeMidiFolder = "../assets/fakeMusic"
+RealCSVFolder = "../assets/csvs/realCSVs"
+FakeCSVFolder = "../assets/csvs/fakeCSVs"
+ModelLocation = "../models"
 
 """## Generate Random Music"""
 
@@ -224,6 +226,7 @@ def getNumpy3DArray(listOfTrainingDFs):
 
 """## Load and prepare the data"""
 
+print("Getting dataframes from Midi Files...")
 
 
 def createTrainingTestData(realData, fakeData, testSize=0.2, randomState=42):
@@ -260,9 +263,6 @@ def getTrainAndTestFromMidiFolders(realMidiFolder = RealMidiFolder, realCSVFolde
     importMidisAndCreateCSVs(fakeMidiFolder, fakeCSVFolder)
     X_train, X_test, y_train, y_test = getTrainAndTestFromCSVs()
     return X_train, X_test, y_train, y_test
-
-
-print("Getting dataframes from Midi Files...")
 
 # addNoiseToCSVs()
 X_train, X_test, y_train, y_test = getTrainAndTestFromCSVs()
@@ -355,4 +355,4 @@ def predictNewMidi(filePath, modelFile):
 
     return predictions
 
-print(predictNewMidi("./720_modified.mid", "model.h5"))
+print(predictNewMidi("./720_modified.mid", f"{ModelLocation}/model.h5"))
