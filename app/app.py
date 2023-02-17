@@ -27,9 +27,12 @@ def main():
             model = load_model(file)
 
     # Check if both a MIDI file and a model file have been uploaded
-    if uploadedMidi is not None and modelFile is not None:
+    if uploadedMidi is not None:
         # Load the pre-trained model from the file
-        
+        if modelFile is None:
+            "*No model file was uploaded, using the default model.*"
+            model = load_model("./models/model.h5")
+            
         pred = predictNewMidi(uploadedMidi, model)
 
         # Display the output MIDI file to the user
