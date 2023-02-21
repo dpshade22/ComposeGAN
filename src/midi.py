@@ -3,7 +3,6 @@ from keras.models import load_model
 from model import predictCSV, saveMidiFromCSV
 
 model = load_model("models/gru/79onBigData/model.h5")
-"./"
 
 # Define the range of values for each column in the CSV file
 trackRange = range(1, 3)
@@ -47,34 +46,41 @@ def mutateBest(bestIndividual, populationSize=100, numMutations=3):
             row_to_mutate = random.randint(0, len(bestIndividual) - 1)
             col_to_mutate = random.choice(["track", "note", "velocity", "time"])
 
-            individualCopy.at[row_to_mutate, col_to_mutate] = random.choice(
-                eval(f"{col_to_mutate}Range")
+            current_val = individualCopy.at[row_to_mutate, col_to_mutate]
+            delta_val = random.randint(-12, 12)
+            new_val = min(
+                max(current_val + delta_val, eval(f"{col_to_mutate}Range").start),
+                eval(f"{col_to_mutate}Range").stop - 1,
             )
+
+            individualCopy.at[row_to_mutate, col_to_mutate] = new_val
 
         mutatedPop.append(individualCopy)
 
     return mutatedPop
 
 
-def mutationLoop():
+def evolve():
     population = generateMidiDFs(5)
     currBest = 0
     currCount = 0
+    elitestRate = 0.3
     while currBest < 0.8:
         population = gradedPopulation(population)
-        population = mutateBest(population[0], 5, 10)
+        population = mutateBest(population[0], 5, 50)
         currBest = predictCSV(population[0], model)
         print(currBest)
 
         currCount += 1
 
         if (currCount % 20) == 0:
-            population[0].to_csv(f"./genTesting/{currBest}.csv", index=False)
+            population[0].to_csv(f"./genTesting/{currBest[0][0]}.csv", index=False)
             saveMidiFromCSV(
-                f"./genTesting/{currBest}.csv", f"./genTesting/midis/{currBest}.mid"
+                f"./genTesting/{currBest[0][0]}.csv",
+                f"./genTesting/midis/{currBest[0][0]}.mid",
             )
 
     population[0].to_csv(f"Testing{currBest}.csv", index=False)
 
 
-mutationLoop()
+evolve()
