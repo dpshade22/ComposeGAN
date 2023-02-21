@@ -1,27 +1,80 @@
-# from model import saveMidiFromCSV
+import random, pandas as pd
+from keras.models import load_model
+from model import predictCSV, saveMidiFromCSV
 
-# saveMidiFromCSV("bestIndividual.csv", "bestIndividual.mid")
-# saveMidiFromCSV("assets/csvs/realCSVs/0.csv", "0.mid")
+model = load_model("models/gru/79onBigData/model.h5")
+"./"
 
-import os
-import re
+# Define the range of values for each column in the CSV file
+trackRange = range(1, 3)
+noteRange = range(0, 127)
+velocityRange = range(0, 127)
+timeRange = range(0, 240)
 
-# specify the directory to search for files
-directory = "./assets/realMusic"
+GENE_LENGTH = 1000
 
-# loop through all the directories and subdirectories in the directory tree
-for root, dirs, files in os.walk(directory):
-    for dir_name in dirs:
-        # check if the directory name contains a dot after /pop/
 
-        if "." in dir_name:
-            dir_path = os.path.join(root, dir_name)
+# Define the function to generate a random CSV file
+def generateMidiDFs(numGenomes):
+    csv_data = []
+    for i in range(numGenomes):
+        genome = []
+        for j in range(GENE_LENGTH):
+            track = random.choice(trackRange)
+            note = random.choice(noteRange)
+            velocity = random.choice(velocityRange)
+            time = random.choice(timeRange)
+            row = [track, note, velocity, time]
+            genome.append(row)
+        df = pd.DataFrame(genome, columns=["track", "note", "velocity", "time"])
+        csv_data.append(df)
+    return csv_data
 
-            # construct the new directory name by replacing dots with underscores
-            new_dir_name = dir_name.replace(".", "_")
 
-            # rename the directory to the new name
-            os.rename(dir_path, new_dir_name)
+def gradedPopulation(population):
+    population = [
+        (predictCSV(individual, model), individual) for individual in population
+    ]
+    return [x[1] for x in sorted(population, reverse=True)]
 
-            # print a message indicating that the directory has been renamed
-            print(f"Renamed directory {dir_path} to {new_dir_name}")
+
+def mutateBest(bestIndividual, populationSize=100, numMutations=3):
+    mutatedPop = [bestIndividual]
+    for x in range(populationSize):
+        individualCopy = bestIndividual.copy()
+
+        for _ in range(numMutations):
+            row_to_mutate = random.randint(0, len(bestIndividual) - 1)
+            col_to_mutate = random.choice(["track", "note", "velocity", "time"])
+
+            individualCopy.at[row_to_mutate, col_to_mutate] = random.choice(
+                eval(f"{col_to_mutate}Range")
+            )
+
+        mutatedPop.append(individualCopy)
+
+    return mutatedPop
+
+
+def mutationLoop():
+    population = generateMidiDFs(5)
+    currBest = 0
+    currCount = 0
+    while currBest < 0.8:
+        population = gradedPopulation(population)
+        population = mutateBest(population[0], 5, 10)
+        currBest = predictCSV(population[0], model)
+        print(currBest)
+
+        currCount += 1
+
+        if (currCount % 20) == 0:
+            population[0].to_csv(f"./genTesting/{currBest}.csv", index=False)
+            saveMidiFromCSV(
+                f"./genTesting/{currBest}.csv", f"./genTesting/midis/{currBest}.mid"
+            )
+
+    population[0].to_csv(f"Testing{currBest}.csv", index=False)
+
+
+mutationLoop()

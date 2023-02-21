@@ -3,7 +3,7 @@ import random
 import pandas as pd
 from model import predictCSV
 
-model = load_model("models/model.h5")
+model = load_model("models/gru/79onBigData/model.h5")
 "./"
 
 # Define the size of the population and the number of generations to evolve
@@ -12,15 +12,15 @@ numEpochs = 1000
 
 # Define the probability of crossover and mutation
 crossoverProbability = 0.8
-mutationProbability = 0.1
+mutationProbability = 0.2
 randomAdd = 0.05
-eliteismRate = 0.25
+eliteismRate = 0.3
 
 # Define the range of values for each column in the CSV file
 trackRange = range(1, 3)
 noteRange = range(0, 127)
 velocityRange = range(0, 127)
-timeRange = range(0, 240)
+timeRange = range(0, 480)
 
 GENE_LENGTH = 1000
 
@@ -55,21 +55,21 @@ def crossover(df1, df2):
 
 
 # Define the function to perform mutation on a dataframe
-def mutate(df):
-    for index, row in df.iterrows():
-        if random.random() < mutationProbability:
-            df.at[index, "column_name"] = random.choice(noteRange)
-    return df
+def mutate(individual, numMutations=1):
+    row_to_mutate = random.randint(0, len(individual) - 1)
+    col_to_mutate = random.choice(["track", "note", "velocity", "time"])
+    individual.at[row_to_mutate, col_to_mutate] = random.choice(f"{col_to_mutate}Range")
+
+    return individual
 
 
-def evolvePopulation(pop, epoch, eliteismRate=0.2, random_select=0.05, mutate=0.1):
+def evolvePopulation(pop, epoch, eliteismRate=0.2, random_select=0.05, mutateRate=0.1):
     """
     Evolve the population by retaining the top `retain` percent of the population, adding random new genes,
     and mutating some of the existing genes.
 
     :param pop: The population to evolve
-    :param target: The target string to evolve towards
-    :param retain: The fraction of the population to retain (default: 0.2)
+    :param retain: The fraction of the population to retain (default: 0.5)
     :param random_select: The fraction of the population to randomly add (default: 0.05)
     :param mutate: The fraction of genes to mutate (default: 0.01)
     :return: The evolved population
@@ -94,41 +94,17 @@ def evolvePopulation(pop, epoch, eliteismRate=0.2, random_select=0.05, mutate=0.
 
     # Mutate some of the individuals
     for individual in parents:
-        if mutate > random.random():
-            row_to_mutate = random.randint(0, len(individual) - 1)
-            col_to_mutate = random.choice(["track", "note", "velocity", "time"])
-            individual.at[row_to_mutate, col_to_mutate] = random.choice(
-                eval(col_to_mutate + "Range")
-            )
-            row_to_mutate = random.randint(0, len(individual) - 1)
-            col_to_mutate = random.choice(["track", "note", "velocity", "time"])
-            individual.at[row_to_mutate, col_to_mutate] = random.choice(
-                eval(col_to_mutate + "Range")
-            )
+        if mutateRate > random.random():
+            mutate(individual, random.randint(1, 150))
 
-    # Crossover parents to create children
-    parents_length = len(parents)
-    desired_length = len(pop) - parents_length
-    children = []
-
-    while len(children) < desired_length:
-        male = random.randint(0, parents_length - 1)
-        female = random.randint(0, parents_length - 1)
-        if male != female:
-            male = parents[male]
-            female = parents[female]
-            half = len(male) // 2
-            child = male[:half] + female[half:]
-            children.append(child)
-
-    # Add the children to the parents to create the new population
-    parents.extend(children)
+    # # Add the children to the parents to create the new population
+    # parents.extend(children)
     pop = parents
 
     # Check if the maximum fitness has been reached
     max_fitness = max([fitness(individual) for individual in pop])
 
-    if max_fitness >= 0.80 or epoch == 10:
+    if max_fitness >= 0.80:
         return pop, max_fitness, True
     else:
         return pop, max_fitness, False
@@ -136,7 +112,7 @@ def evolvePopulation(pop, epoch, eliteismRate=0.2, random_select=0.05, mutate=0.
 
 def main():
     # Initialize the population
-    pop = generateMidiDFs(100)
+    pop = generateMidiDFs(populationSize)
     indEx = pop[0]
     epoch = 0
 

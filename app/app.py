@@ -4,6 +4,7 @@ from helpers import predictNewMidi
 import h5py
 import os
 
+
 # Define the main function to run the app
 def main():
     # Set up the app title and description
@@ -23,7 +24,7 @@ def main():
     "---"
     if modelFile is not None:
         with h5py.File(modelFile, "r") as file:
-        # Load the Keras model from the HDF5 file
+            # Load the Keras model from the HDF5 file
             model = load_model(file)
 
     # Check if both a MIDI file and a model file have been uploaded
@@ -31,13 +32,14 @@ def main():
         # Load the pre-trained model from the file
         if modelFile is None:
             "*No model file was uploaded, using the default model.*"
-            model = load_model("./models/model.h5")
-            
+            model = load_model("./models/gru/79onBigData/model.h5")
+
         pred = predictNewMidi(uploadedMidi, model)
 
         # Display the output MIDI file to the user
         "## Prediction"
         f"*{uploadedMidi.name}*: **{round(pred[0][0] * 100, 2)}%**"
+
 
 # Run the main function
 if __name__ == "__main__":
